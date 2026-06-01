@@ -1,4 +1,5 @@
 import os
+import uuid
 import cloudinary.uploader
 
 from fastapi import APIRouter
@@ -25,7 +26,11 @@ animator = AnimationGenerator()
 
 @text_router.post("/text-to-sign")
 def text_to_sign(data: TextInput):
-
+    
+    
+    request_id = data.request_id or str(uuid.uuid4())
+    
+    
     tokens = normalizer.tokenize(data.sentence)
 
     if not tokens:
@@ -49,11 +54,6 @@ def text_to_sign(data: TextInput):
             "success": False,
             "message": "Pose stitching failed"
         }
-
-
-    video_output = animator.generate(
-    stitched_pose
-    )
    
     buffer = BytesIO()
 
@@ -65,30 +65,21 @@ def text_to_sign(data: TextInput):
         buffer,
         resource_type = "raw",
         folder = "generated_pose",
-        use_filename = True,
-        unique_filename = True,
+        public_id=request_id,
+        use_filename=False,
+        overwrite=True,
         format="pose"
     )
     
     generated_pose_url = result["secure_url"]
-
-    
-    def iterfile():
-
-        with open(video_output, "rb") as f:
-
-            while chunk := f.read(1024 * 1024):
-                yield chunk
-
-        os.remove(video_output)
     
     print("Uploaded:", generated_pose_url)
     
     
-    return StreamingResponse(
-    iterfile(),
-    media_type="video/mp4",
-    headers={
-        "X-Pose-URL": generated_pose_url
+    return {
+        "success": True,
+        "request_id": request_id,
+        "pose_URL": generated_pose_url,
+        "tokens": tokens
     }
-)
+    

@@ -3,7 +3,7 @@ import uuid
 import cloudinary.uploader
 
 from config import cloudinary_config
-from fastapi import APIRouter, UploadFile, File
+from fastapi import APIRouter, UploadFile, File, Form
 from services.arabic_normalizer import ArabicNormalizer
 from services.pose_retriever import PoseRetriever
 from services.pose_smoother import PoseSmoother
@@ -23,7 +23,9 @@ animator = AnimationGenerator()
 stt = SpeechToTextSR()
 
 @speech_router.post("/speech-to-text")
-async def speech_to_text(audio: UploadFile = File(...)):
+async def speech_to_text(audio: UploadFile = File(...), request_id: str | None = Form(None)):
+    
+    request_id = request_id or str(uuid.uuid4())
     
     temp_audio = f"temp_{audio.filename}"
 
@@ -56,11 +58,6 @@ async def speech_to_text(audio: UploadFile = File(...)):
             "message": "Pose stitching failed"
         }
     
-    video_output = animator.generate(
-    stitched_pose
-    )
-    
-
     buffer = BytesIO()
 
     stitched_pose.write(buffer)
@@ -71,29 +68,21 @@ async def speech_to_text(audio: UploadFile = File(...)):
         buffer,
         resource_type = "raw",
         folder = "generated_pose",
-        use_filename = True,
-        unique_filename = True,
+        public_id=request_id,
+        use_filename=False,
+        overwrite=True,
         format="pose"
     )
     
     generated_pose_url = result["secure_url"]
     
-    def iterfile():
-
-        with open(video_output, "rb") as f:
-
-            while chunk := f.read(1024 * 1024):
-                yield chunk
-
-        os.remove(video_output)
     
     print("Uploaded:", generated_pose_url)
 
     
-    return StreamingResponse(
-    iterfile(),
-    media_type="video/mp4",
-    headers={
-        "X-Pose-URL": generated_pose_url
+    return {
+        "success": True,
+        "request_id": request_id,
+        "pose_URL": generated_pose_url,
+        "tokens": tokens
     }
-)
