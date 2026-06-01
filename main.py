@@ -5,7 +5,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from api.routes.text_to_sign import text_router
 from api.routes.Speech_to_text import speech_router
-
+from api.routes.video import video_router
 app = FastAPI(
     title="Text To Sign API",
     description="API for converting Arabic text/speech to sign language outputs.",
@@ -72,6 +72,7 @@ def root():
 
 app.include_router(text_router)
 app.include_router(speech_router)
+app.include_router(video_router)
 
 app.mount(
     "/static",
