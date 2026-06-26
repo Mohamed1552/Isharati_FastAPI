@@ -17,17 +17,14 @@ from schemas.requests import TextInput
 
 text_router = APIRouter()
 
-poses_dir = "poses.json"
-
 normalizer = ArabicNormalizer()
-retriever = PoseRetriever(poses_dir)
 smoother = PoseSmoother()
 animator = AnimationGenerator()
 
 @text_router.post("/text-to-sign")
 def text_to_sign(data: TextInput):
     
-    
+    retriever = PoseRetriever()
     request_id = data.request_id or str(uuid.uuid4())
     
     

@@ -14,10 +14,7 @@ from io import BytesIO
 
 speech_router = APIRouter()
 
-poses_dir = "poses.json"
-
 normalizer = ArabicNormalizer()
-retriever = PoseRetriever(poses_dir)
 smoother = PoseSmoother()
 animator = AnimationGenerator()
 stt = SpeechToTextSR()
@@ -25,6 +22,7 @@ stt = SpeechToTextSR()
 @speech_router.post("/speech-to-text")
 async def speech_to_text(audio: UploadFile = File(...), request_id: str | None = Form(None)):
     
+    retriever = PoseRetriever()
     request_id = request_id or str(uuid.uuid4())
     
     temp_audio = f"temp_{audio.filename}"
